@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost or corrupted Android keystore? Here's what to actually do — Vault</title>
+<meta name="description" content="A clear, honest guide to recovering from a lost or corrupted Android signing keystore, and how to make sure it never happens again.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#0E1116;
+    --surface:#171B22;
+    --surface-2:#1D222B;
+    --border:#2A303A;
+    --text-primary:#E8E6DF;
+    --text-muted:#8B9099;
+    --accent-brass:#D9A94E;
+    --accent-brass-dim:#8A6E33;
+    --accent-teal:#4FD1AE;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg-void);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-brass);}
+  a:focus-visible{outline:2px solid var(--accent-teal);outline-offset:3px;}
+  .wrap{max-width:720px;margin:0 auto;padding:0 24px;}
+  header.top{padding:28px 0;border-bottom:1px solid var(--border);}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .eyebrow a{color:var(--text-muted);text-decoration:underline;text-underline-offset:3px;}
+  .eyebrow a:hover{color:var(--accent-brass);}
+
+  article{padding:56px 0 40px;}
+  h1{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(26px,4vw,36px);
+    line-height:1.3;
+    margin:0 0 28px;
+  }
+  h2{
+    font-family:var(--mono);
+    font-size:20px;
+    font-weight:500;
+    margin:40px 0 14px;
+  }
+  p{font-size:16px;color:var(--text-primary);margin:0 0 18px;}
+  p.lede{color:var(--text-muted);font-size:17px;}
+  ol, ul{padding-left:22px;margin:0 0 20px;}
+  li{margin-bottom:10px;font-size:16px;}
+  code.inline{
+    font-family:var(--mono);
+    background:var(--surface-2);
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:14px;
+    color:var(--accent-teal);
+  }
+  .note{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:2px solid var(--accent-brass-dim);
+    border-radius:6px;
+    padding:16px 20px;
+    margin:24px 0;
+    font-size:15px;
+    color:var(--text-muted);
+  }
+  .cta-block{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:32px;
+    text-align:center;
+    margin-top:48px;
+  }
+  .cta-block h2{margin-top:0;}
+  .cta-block p{color:var(--text-muted);}
+  .btn{
+    display:inline-block;
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:15px;
+    background:var(--accent-brass);
+    color:#1A1406;
+    padding:13px 24px;
+    border-radius:6px;
+    text-decoration:none;
+  }
+  .btn:hover{background:#E6B85E;}
+  footer{padding:36px 0;font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+  <header class="top">
+    <div class="wrap eyebrow">
+      <a href="/">Vault</a> · Part of <a href="https://innocentapps.com">Innocent Apps</a>
+    </div>
+  </header>
+
+  <article class="wrap">
+    <h1>Lost or corrupted Android keystore? Here's what to actually do</h1>
+
+    <p class="lede">If you just realized your Android signing keystore is gone, corrupted, or the password is lost — take a breath first. Your live app on the Play Store is not broken, and your existing users are not affected. What's at risk is your ability to push updates under that same app listing. Whether that's recoverable depends on one thing: whether Play App Signing was enabled before you lost the key.</p>
+
+    <h2>First, the two keys you're actually dealing with</h2>
+    <p>Google Play publishing involves two separate keys, and mixing them up is the source of most of the panic:</p>
+    <ul>
+      <li><strong>The app signing key</strong> — the one Google actually uses to sign what your users download. If you enrolled in Play App Signing (the default for new apps for years now), Google holds this key securely on your behalf. You never touch it directly.</li>
+      <li><strong>The upload key</strong> — the one you use locally to sign the AAB/APK you upload to the Play Console. This is the one people usually mean when they say "I lost my keystore."</li>
+    </ul>
+    <p>If you're enrolled in Play App Signing, losing your upload key is annoying, not fatal — because the key that really matters to your users was never the one you lost.</p>
+
+    <h2>If Play App Signing is enabled: you can recover</h2>
+    <p>Here's the general path:</p>
+    <ol>
+      <li>Confirm you're logged in as the <strong>account owner</strong>, not an editor or admin — the reset option is only visible to the owner role.</li>
+      <li>In Play Console, go to your app's <code class="inline">Setup → App integrity → App signing</code> tab, and confirm Play App Signing is active.</li>
+      <li>Generate a brand-new keystore locally (a single <code class="inline">keytool -genkey</code> command handles this).</li>
+      <li>Export a <code class="inline">.pem</code> certificate from that new keystore.</li>
+      <li>Find <strong>Request upload key reset</strong>, pick the reason that matches your situation, and upload the <code class="inline">.pem</code> file.</li>
+      <li>Wait — Google typically takes 24 to 72 hours to process the request and will email you once the new key is active.</li>
+      <li>From that point on, sign all future releases with your new keystore.</li>
+    </ol>
+    <div class="note">
+      Two details people frequently miss: you need the <strong>account owner login</strong> specifically, not just any account with access to the app. And the reset doesn't change the fingerprint your users' installed apps trust, but it does change the upload key's own SHA fingerprint — so update it anywhere you've used it (Firebase, Google Sign-In, Maps API restrictions).
+    </div>
+
+    <h2>If Play App Signing was never enabled</h2>
+    <p>This is the genuinely hard case. Without Play App Signing, there's no separation between your upload key and your app signing key — they're the same file, and Google has no copy of it to fall back on. If it's truly gone, with no backup anywhere, there's no reset option waiting for you. Your realistic options are searching every old machine, drive, email attachment, or CI/CD secrets store you've ever used, or accepting you'll need to publish as a new app listing and lose your existing install base, reviews, and ranking history.</p>
+    <p>This is exactly why Google made Play App Signing the default for new apps — but it's opt-in retroactively for older apps, so if you've never explicitly checked, it's worth confirming today, while you still can.</p>
+
+    <h2>If you publish outside the Play Store</h2>
+    <p>Huawei AppGallery, Amazon Appstore, Samsung Galaxy Store, and similar alternative stores don't have an equivalent safety net. There's no reset option waiting for you if the file is gone — the keystore you have is the only one that will ever exist for that app. If you publish to any of these, treat your keystore backup as non-negotiable, not optional.</p>
+
+    <h2>The actual fix: stop relying on remembering to back it up</h2>
+    <p>Whether or not this happened to you, the underlying problem is the same for almost every developer: everyone knows they should back up their keystore, and almost nobody does it consistently, because remembering to do it by hand, for every project, every time, isn't realistic.</p>
+
+    <div class="cta-block">
+      <h2>Vault backs it up for you, automatically</h2>
+      <p>Encrypted on your own device before it's ever sent anywhere, the moment you run a release build. We're opening early access to a small group of developers first.</p>
+      <a class="btn" href="https://tally.so/r/815e0P" target="_blank" rel="noopener">Join the waitlist</a>
+    </div>
+  </article>
+
+  <footer class="wrap">
+    Built by the team behind <a href="https://innocentapps.com">Innocent Apps</a>.
+  </footer>
+
+</body>
+</html>
